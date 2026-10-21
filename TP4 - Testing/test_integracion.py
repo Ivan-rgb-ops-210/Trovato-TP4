@@ -123,3 +123,16 @@ def test_pedido_guarda_cupon_vacio_como_none(con):
     guardado = pedidos.obtener_pedido(con, pedido_id)
 
     assert guardado["cupon"] is None
+
+
+def test_pedidos_de_normaliza_email_y_ordena_del_mas_reciente(con):
+    primer_id = pedidos.guardar_pedido(
+        con, " Ana@Mail.com ", [item(producto="remera")], "CABA", fecha=HOY_VIGENTE
+    )
+    segundo_id = pedidos.guardar_pedido(
+        con, "ana@mail.com", [item(producto="buzo")], "GBA", fecha=HOY_VIGENTE
+    )
+
+    resultado = pedidos.pedidos_de(con, " ANA@MAIL.COM ")
+
+    assert [pedido["id"] for pedido in resultado] == [segundo_id, primer_id]
