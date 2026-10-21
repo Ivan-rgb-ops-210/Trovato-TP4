@@ -37,3 +37,16 @@ def contar(ruta, tabla):
 
 def test_un_id_inexistente_devuelve_none(con):
     assert pedidos.obtener_pedido(con, 999) is None
+
+
+def test_error_de_checkout_no_deja_pedido_ni_items(con, ruta):
+    carrito = [item(producto="gorra")]
+
+    with pytest.raises(CheckoutError) as error:
+        pedidos.guardar_pedido(
+            con, "ana@mail.com", carrito, "CABA", fecha=HOY_VIGENTE
+        )
+
+    assert error.value.code == "PRODUCTO_INEXISTENTE"
+    assert contar(ruta, "pedidos") == 0
+    assert contar(ruta, "items") == 0
