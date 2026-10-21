@@ -24,6 +24,12 @@ CREATE TABLE IF NOT EXISTS items (
 );
 """
 
+CENTAVO = Decimal("0.01")
+
+
+def _decimal_de_sql(valor):
+    return Decimal(str(valor)).quantize(CENTAVO)
+
 
 def conectar(ruta):
     con = sqlite3.connect(ruta)
@@ -91,16 +97,16 @@ def obtener_pedido(con, pedido_id):
         "email": fila["email"],
         "zona": fila["zona"],
         "cupon": fila["cupon"],
-        "subtotal": Decimal(fila["subtotal"]),
-        "descuento": Decimal(fila["descuento"]),
-        "envio": Decimal(fila["envio"]),
-        "total": Decimal(fila["total"]),
+        "subtotal": _decimal_de_sql(fila["subtotal"]),
+        "descuento": _decimal_de_sql(fila["descuento"]),
+        "envio": _decimal_de_sql(fila["envio"]),
+        "total": _decimal_de_sql(fila["total"]),
         "items": [
             {
                 "producto": i["producto"],
                 "talle": i["talle"],
                 "cantidad": i["cantidad"],
-                "precio_unitario": Decimal(i["precio_unitario"]),
+                "precio_unitario": _decimal_de_sql(i["precio_unitario"]),
             }
             for i in items
         ],
