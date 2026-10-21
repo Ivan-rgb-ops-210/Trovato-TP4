@@ -41,3 +41,14 @@ def test_una_ruta_inexistente_devuelve_404(url):
     status, cuerpo = pedir(url, "GET", "/api/v1/otra")
     assert status == 404
     assert cuerpo["error"]["code"] == "RUTA_INEXISTENTE"
+
+
+def test_post_crea_pedido_y_devuelve_montos_como_texto(url):
+    status, cuerpo = pedir(url, "POST", RUTA, cuerpo=compra())
+
+    assert status == 201
+    assert type(cuerpo["id"]) is int
+    assert cuerpo["subtotal"] == "24999.90"
+    assert cuerpo["descuento"] == "0.00"
+    assert cuerpo["envio"] == "2500.00"
+    assert cuerpo["total"] == "27499.90"
