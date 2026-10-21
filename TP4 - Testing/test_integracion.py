@@ -50,3 +50,35 @@ def test_error_de_checkout_no_deja_pedido_ni_items(con, ruta):
     assert error.value.code == "PRODUCTO_INEXISTENTE"
     assert contar(ruta, "pedidos") == 0
     assert contar(ruta, "items") == 0
+
+
+def test_pedido_completo_es_visible_desde_otra_conexion(con, ruta):
+    carrito = [item(producto="remera", talle="M", cantidad=1)]
+    pedido_id = pedidos.guardar_pedido(
+        con, "ana@mail.com", carrito, "CABA", fecha=HOY_VIGENTE
+    )
+
+    otra_conexion = pedidos.conectar(ruta)
+    try:
+        guardado = pedidos.obtener_pedido(otra_conexion, pedido_id)
+    finally:
+        otra_conexion.close()
+
+    assert guardado == {
+        "id": pedido_id,
+        "email": "ana@mail.com",
+        "zona": "CABA",
+        "cupon": None,
+        "subtotal": Decimal("11999.50"),
+        "descuento": Decimal("0.00"),
+        "envio": Decimal("2500.00"),
+        "total": Decimal("14499.50"),
+        "items": [
+            {
+                "producto": "remera",
+                "talle": "M",
+                "cantidad": 1,
+                "precio_unitario": Decimal("11999.50"),
+            }
+        ],
+    }
