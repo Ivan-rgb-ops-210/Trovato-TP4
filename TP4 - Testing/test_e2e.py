@@ -147,3 +147,39 @@ def test_post_a_ruta_inexistente_devuelve_404(url):
     assert status == 404
     assert cuerpo["error"]["code"] == "RUTA_INEXISTENTE"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+@pytest.mark.parametrize(
+    ("metodo", "ruta", "datos", "crudo", "status_esperado", "codigo"),
+    [
+        ("POST", RUTA, None, b"esto no es JSON", 400, "JSON_INVALIDO"),
+        ("POST", RUTA, {"zona": "CABA", "carrito": []}, None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, {"email": "ana@mail.com", "carrito": []}, None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, {"email": "ana@mail.com", "zona": "CABA"}, None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, compra(email=7), None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, compra(zona=7), None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, compra(carrito={}), None, 400, "DATOS_INCOMPLETOS"),
+        ("POST", RUTA, compra(fecha="30/11/2026"), None, 400, "FECHA_INVALIDA"),
+        (
+            "POST",
+            RUTA,
+            compra(carrito=[{"producto": "gorra", "talle": "M", "cantidad": 1}]),
+            None,
+            422,
+            "PRODUCTO_INEXISTENTE",
+        ),
+        ("GET", f"{RUTA}/999", None, None, 404, "PEDIDO_INEXISTENTE"),
+        ("GET", "/api/v1/otra", None, None, 404, "RUTA_INEXISTENTE"),
+        ("POST", "/api/v1/otra", compra(), None, 404, "RUTA_INEXISTENTE"),
+    ],
+)
+def test_todos_los_errores_tienen_formato_comun_y_no_son_500(
+    url, metodo, ruta, datos, crudo, status_esperado, codigo
+):
+    status, cuerpo = pedir(url, metodo, ruta, cuerpo=datos, crudo=crudo)
+
+    assert status == status_esperado
+    assert status != 500
+    assert "error" in cuerpo
+    assert cuerpo["error"]["code"] == codigo
+    assert isinstance(cuerpo["error"]["message"], str)
