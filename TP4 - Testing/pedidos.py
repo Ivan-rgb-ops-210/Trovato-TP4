@@ -110,6 +110,6 @@ def obtener_pedido(con, pedido_id):
 def pedidos_de(con, email):
     email = email.strip().lower()
     filas = con.execute(
-        f"SELECT id FROM pedidos WHERE email = '{email}' ORDER BY id DESC"
+        "SELECT id FROM pedidos WHERE email = ? ORDER BY id DESC", (email,)
     ).fetchall()
     return [obtener_pedido(con, f["id"]) for f in filas]
