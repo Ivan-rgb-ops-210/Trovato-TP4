@@ -84,3 +84,15 @@ def test_post_con_json_invalido_devuelve_400(url):
     assert status == 400
     assert cuerpo["error"]["code"] == "JSON_INVALIDO"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+@pytest.mark.parametrize("campo", ["email", "zona", "carrito"])
+def test_post_sin_campo_obligatorio_devuelve_400(url, campo):
+    datos = compra()
+    del datos[campo]
+
+    status, cuerpo = pedir(url, "POST", RUTA, cuerpo=datos)
+
+    assert status == 400
+    assert cuerpo["error"]["code"] == "DATOS_INCOMPLETOS"
+    assert isinstance(cuerpo["error"]["message"], str)
