@@ -136,3 +136,18 @@ def test_pedidos_de_normaliza_email_y_ordena_del_mas_reciente(con):
     resultado = pedidos.pedidos_de(con, " ANA@MAIL.COM ")
 
     assert [pedido["id"] for pedido in resultado] == [segundo_id, primer_id]
+
+
+def test_pedidos_de_trata_email_como_dato_literal(con):
+    email_hostil = "' OR 1=1 --"
+    pedido_legitimo_id = pedidos.guardar_pedido(
+        con, "ana@mail.com", [item(producto="remera")], "CABA", fecha=HOY_VIGENTE
+    )
+    pedido_hostil_id = pedidos.guardar_pedido(
+        con, email_hostil, [item(producto="buzo")], "CABA", fecha=HOY_VIGENTE
+    )
+
+    resultado = pedidos.pedidos_de(con, email_hostil)
+
+    assert [pedido["id"] for pedido in resultado] == [pedido_hostil_id]
+    assert pedido_hostil_id != pedido_legitimo_id
