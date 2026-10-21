@@ -110,3 +110,11 @@ def test_post_con_tipo_incorrecto_devuelve_400(url, campo, valor):
     assert status == 400
     assert cuerpo["error"]["code"] == "DATOS_INCOMPLETOS"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+def test_post_con_fecha_invalida_devuelve_400(url):
+    status, cuerpo = pedir(url, "POST", RUTA, cuerpo=compra(fecha="30/11/2026"))
+
+    assert status == 400
+    assert cuerpo["error"]["code"] == "FECHA_INVALIDA"
+    assert isinstance(cuerpo["error"]["message"], str)
