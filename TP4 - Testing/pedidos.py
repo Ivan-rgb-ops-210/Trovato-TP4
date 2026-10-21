@@ -63,7 +63,7 @@ def guardar_pedido(con, email, carrito, zona, cupon=None, fecha=None):
         )
 
         for item in carrito:
-            precio = item.get("precio", CATALOGO[item["producto"]])
+            precio = CATALOGO[item["producto"]]
             con.execute(
                 "INSERT INTO items (pedido_id, producto, talle, cantidad, precio_unitario)"
                 " VALUES (?, ?, ?, ?, ?)",
