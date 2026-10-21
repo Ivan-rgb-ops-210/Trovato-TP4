@@ -118,3 +118,16 @@ def test_post_con_fecha_invalida_devuelve_400(url):
     assert status == 400
     assert cuerpo["error"]["code"] == "FECHA_INVALIDA"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+def test_post_con_producto_inexistente_devuelve_422(url):
+    status, cuerpo = pedir(
+        url,
+        "POST",
+        RUTA,
+        cuerpo=compra(carrito=[{"producto": "gorra", "talle": "M", "cantidad": 1}]),
+    )
+
+    assert status == 422
+    assert cuerpo["error"]["code"] == "PRODUCTO_INEXISTENTE"
+    assert isinstance(cuerpo["error"]["message"], str)
