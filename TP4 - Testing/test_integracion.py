@@ -94,3 +94,22 @@ def test_precio_unitario_guardado_sale_del_catalogo(con):
 
     assert guardado["subtotal"] == Decimal("11999.50")
     assert guardado["items"][0]["precio_unitario"] == Decimal("11999.50")
+
+
+def test_pedido_guarda_datos_normalizados(con):
+    carrito = [item(producto="buzo", talle=" m ")]
+
+    pedido_id = pedidos.guardar_pedido(
+        con,
+        " Ana@Mail.com ",
+        carrito,
+        " caba ",
+        " bienvenida ",
+        HOY_VIGENTE,
+    )
+    guardado = pedidos.obtener_pedido(con, pedido_id)
+
+    assert guardado["email"] == "ana@mail.com"
+    assert guardado["zona"] == "CABA"
+    assert guardado["cupon"] == "BIENVENIDA"
+    assert guardado["items"][0]["talle"] == "M"
