@@ -52,3 +52,27 @@ def test_post_crea_pedido_y_devuelve_montos_como_texto(url):
     assert cuerpo["descuento"] == "0.00"
     assert cuerpo["envio"] == "2500.00"
     assert cuerpo["total"] == "27499.90"
+
+
+def test_get_devuelve_pedido_completo_y_montos_como_texto(url):
+    status_creacion, creado = pedir(url, "POST", RUTA, cuerpo=compra())
+    assert status_creacion == 201
+
+    status, cuerpo = pedir(url, "GET", f"{RUTA}/{creado['id']}")
+
+    assert status == 200
+    assert cuerpo["id"] == creado["id"]
+    assert cuerpo["email"] == "ana@mail.com"
+    assert cuerpo["zona"] == "CABA"
+    assert cuerpo["subtotal"] == "24999.90"
+    assert cuerpo["descuento"] == "0.00"
+    assert cuerpo["envio"] == "2500.00"
+    assert cuerpo["total"] == "27499.90"
+    assert cuerpo["items"] == [
+        {
+            "producto": "buzo",
+            "talle": "M",
+            "cantidad": 1,
+            "precio_unitario": "24999.90",
+        }
+    ]
