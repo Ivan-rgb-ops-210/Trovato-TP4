@@ -96,3 +96,17 @@ def test_post_sin_campo_obligatorio_devuelve_400(url, campo):
     assert status == 400
     assert cuerpo["error"]["code"] == "DATOS_INCOMPLETOS"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor"),
+    [("email", 7), ("zona", 7), ("carrito", {})],
+)
+def test_post_con_tipo_incorrecto_devuelve_400(url, campo, valor):
+    datos = compra(**{campo: valor})
+
+    status, cuerpo = pedir(url, "POST", RUTA, cuerpo=datos)
+
+    assert status == 400
+    assert cuerpo["error"]["code"] == "DATOS_INCOMPLETOS"
+    assert isinstance(cuerpo["error"]["message"], str)
