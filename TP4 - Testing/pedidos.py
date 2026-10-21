@@ -36,39 +36,45 @@ def crear_esquema(con):
 
 
 def guardar_pedido(con, email, carrito, zona, cupon=None, fecha=None):
-    cursor = con.execute(
-        "INSERT INTO pedidos (email, zona, cupon) VALUES (?, ?, ?)",
-        (
-            email.strip().lower(),
-            zona.strip().upper(),
-            cupon.strip().upper() if cupon and cupon.strip() else None,
-        ),
-    )
-    pedido_id = cursor.lastrowid
-    con.commit()
-
+    # Validar y calcular antes de abrir una transacción de escritura: si el
+    # checkout falla, no debe quedar un pedido vacío en la base.
     resultado = calcular_total(carrito, zona, cupon, fecha)
 
-    con.execute(
-        "UPDATE pedidos SET subtotal = ?, descuento = ?, envio = ?, total = ? WHERE id = ?",
-        (
-            float(resultado["subtotal"]),
-            float(resultado["descuento"]),
-            float(resultado["envio"]),
-            float(resultado["total"]),
-            pedido_id,
-        ),
-    )
+    try:
+        cursor = con.execute(
+            "INSERT INTO pedidos (email, zona, cupon) VALUES (?, ?, ?)",
+            (
+                email.strip().lower(),
+                zona.strip().upper(),
+                cupon.strip().upper() if cupon and cupon.strip() else None,
+            ),
+        )
+        pedido_id = cursor.lastrowid
 
-    for item in carrito:
-        precio = item.get("precio", CATALOGO[item["producto"]])
         con.execute(
-            "INSERT INTO items (pedido_id, producto, talle, cantidad, precio_unitario)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (pedido_id, item["producto"], item["talle"].strip().upper(), item["cantidad"], float(precio)),
+            "UPDATE pedidos SET subtotal = ?, descuento = ?, envio = ?, total = ? WHERE id = ?",
+            (
+                float(resultado["subtotal"]),
+                float(resultado["descuento"]),
+                float(resultado["envio"]),
+                float(resultado["total"]),
+                pedido_id,
+            ),
         )
 
-    return pedido_id
+        for item in carrito:
+            precio = item.get("precio", CATALOGO[item["producto"]])
+            con.execute(
+                "INSERT INTO items (pedido_id, producto, talle, cantidad, precio_unitario)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (pedido_id, item["producto"], item["talle"].strip().upper(), item["cantidad"], float(precio)),
+            )
+
+        con.commit()
+        return pedido_id
+    except Exception:
+        con.rollback()
+        raise
 
 
 def obtener_pedido(con, pedido_id):
