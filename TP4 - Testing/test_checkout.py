@@ -69,3 +69,14 @@ def test_talle_ignora_espacios_exteriores():
 
     # Assert
     assert resultado is None
+
+
+def test_descuento_por_cantidad_se_activa_con_cinco_prendas():
+    # Arrange
+    subtotal = Decimal("10000.00")
+
+    # Act
+    resultado = calcular_descuento(subtotal, 5, None, HOY_VIGENTE)
+
+    # Assert
+    assert resultado == Decimal("1000.00")
