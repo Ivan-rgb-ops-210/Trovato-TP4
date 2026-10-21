@@ -131,3 +131,11 @@ def test_post_con_producto_inexistente_devuelve_422(url):
     assert status == 422
     assert cuerpo["error"]["code"] == "PRODUCTO_INEXISTENTE"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+def test_get_pedido_inexistente_devuelve_404(url):
+    status, cuerpo = pedir(url, "GET", f"{RUTA}/999")
+
+    assert status == 404
+    assert cuerpo["error"]["code"] == "PEDIDO_INEXISTENTE"
+    assert isinstance(cuerpo["error"]["message"], str)
