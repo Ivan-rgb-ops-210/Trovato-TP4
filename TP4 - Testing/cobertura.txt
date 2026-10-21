@@ -1,0 +1,1 @@
+Pendiente: generar el reporte al completar la suite unitaria de la Parte 3.
