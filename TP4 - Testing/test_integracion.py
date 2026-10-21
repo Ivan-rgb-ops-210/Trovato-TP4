@@ -151,3 +151,16 @@ def test_pedidos_de_trata_email_como_dato_literal(con):
 
     assert [pedido["id"] for pedido in resultado] == [pedido_hostil_id]
     assert pedido_hostil_id != pedido_legitimo_id
+
+
+def test_montos_recuperados_conservan_precision_decimal(con):
+    pedido_id = pedidos.guardar_pedido(
+        con, "ana@mail.com", [item(producto="buzo")], "CABA", fecha=HOY_VIGENTE
+    )
+
+    guardado = pedidos.obtener_pedido(con, pedido_id)
+
+    assert guardado["subtotal"] == Decimal("24999.90")
+    assert guardado["descuento"] == Decimal("0.00")
+    assert guardado["envio"] == Decimal("2500.00")
+    assert guardado["total"] == Decimal("27499.90")
