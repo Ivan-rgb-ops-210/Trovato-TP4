@@ -139,3 +139,11 @@ def test_get_pedido_inexistente_devuelve_404(url):
     assert status == 404
     assert cuerpo["error"]["code"] == "PEDIDO_INEXISTENTE"
     assert isinstance(cuerpo["error"]["message"], str)
+
+
+def test_post_a_ruta_inexistente_devuelve_404(url):
+    status, cuerpo = pedir(url, "POST", "/api/v1/otra", cuerpo=compra())
+
+    assert status == 404
+    assert cuerpo["error"]["code"] == "RUTA_INEXISTENTE"
+    assert isinstance(cuerpo["error"]["message"], str)
