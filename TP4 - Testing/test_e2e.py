@@ -76,3 +76,11 @@ def test_get_devuelve_pedido_completo_y_montos_como_texto(url):
             "precio_unitario": "24999.90",
         }
     ]
+
+
+def test_post_con_json_invalido_devuelve_400(url):
+    status, cuerpo = pedir(url, "POST", RUTA, crudo=b"esto no es JSON")
+
+    assert status == 400
+    assert cuerpo["error"]["code"] == "JSON_INVALIDO"
+    assert isinstance(cuerpo["error"]["message"], str)
