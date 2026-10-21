@@ -46,3 +46,15 @@ def test_cantidad_decimal_es_invalida():
 
     # Act / Assert
     assert codigo_de_error(validar_item, entrada) == "CANTIDAD_INVALIDA"
+
+
+def test_validar_item_no_modifica_el_item():
+    # Arrange
+    entrada = item(talle="m")
+    original = entrada.copy()
+
+    # Act
+    validar_item(entrada)
+
+    # Assert
+    assert entrada == original
