@@ -45,7 +45,8 @@ Particiones: carrito vacío, con un ítem y con varios. Ninguna función modific
 |---|---|---|
 | R4.1 | carrito `[]` | `CARRITO_VACIO` |
 | R4.2 | un buzo M, cantidad 1 | Subtotal `24999.90` |
-| R4.3 | talle `  m ` y `precio: 1` | Calcula con precio de catálogo y conserva exactamente el carrito original |
+| R4.3 | un buzo M y una remera S, ambos cantidad 1 | Subtotal `36999.40` |
+| R4.4 | talle `  m ` y `precio: 1` | Calcula con precio de catálogo y conserva exactamente el carrito original |
 
 ## R5 — Descuento por cantidad
 
@@ -70,7 +71,12 @@ Particiones: sin cupón; porcentaje vigente o vencido; cupón fijo que cumple o 
 | R6.5 | BIENVENIDA, subtotal `20000.00` | Descuento `3000.00` |
 | R6.6 | código `DESCONOCIDO` | `CUPON_INVALIDO` |
 | R6.7 | 5 prendas, descuento cantidad `5999.75`, BIENVENIDA | Descuento `5999.75`, no `8999.75` |
-| R6.8 | Cupón que produciría descuento mayor al subtotal | Descuento limitado al subtotal |
+
+Con los únicos cupones definidos, ninguna entrada válida produce un descuento
+mayor que el subtotal: el porcentaje es 15%, el descuento fijo requiere un
+subtotal mínimo de `20000.00` y el descuento por cantidad es 10%. Por eso no
+hay una entrada válida para una prueba de caja negra que fuerce el límite de
+descuento de R6; se conserva como invariante a verificar al implementar.
 
 ## R7 — Dinero y redondeo
 
@@ -79,7 +85,7 @@ Particiones: importes exactos al centavo y porcentajes que producen fracciones d
 | Caso | Entrada | Resultado esperado |
 |---|---|---|
 | R7.1 | 15% de `11999.50` | `1799.93` (`1799.925` redondea arriba) |
-| R7.2 | total de un buzo | Campos monetarios `Decimal`; subtotal `24999.90` |
+| R7.2 | 1 buzo M, envío CABA, sin cupón | `subtotal: Decimal("24999.90")`, `descuento: Decimal("0.00")`, `envio: Decimal("2500.00")`, `total: Decimal("27499.90")` |
 
 ## R8 — Envío
 
@@ -114,14 +120,14 @@ Particiones: pedido válido visible desde otra conexión; error sin escrituras; 
 
 | Caso | Entrada | Resultado esperado |
 |---|---|---|
-| R10.1 | Guardar pedido y consultar desde otra conexión al mismo archivo | Pedido e ítems completos y visibles |
-| R10.2 | Guardar carrito inválido | Propaga `CheckoutError`; 0 pedidos y 0 ítems |
-| R10.3 | remera con precio enviado `1` | precio unitario `Decimal("11999.50")`; importes Decimal idénticos a checkout |
-| R10.4 | email `" Ana@Mail.com "`, zona `" caba "`, talle `" m "`, cupón `" bienvenida "` | email `ana@mail.com`; zona, talle y cupón en mayúscula sin espacios |
-| R10.5 | cupón vacío | Se guarda `None` |
-| R10.6 | consultar id inexistente | Devuelve `None` |
-| R10.7 | dos pedidos con variantes de email | Ambos se encuentran, más reciente primero |
-| R10.8 | email `' OR 1=1 --` | Se trata literalmente; no altera la consulta |
+| R10.1 | En archivo temporal, guardar email `ana@mail.com`, zona CABA y carrito `[remera M × 1]`; abrir segunda conexión y consultar id devuelto | La segunda conexión encuentra el pedido con su ítem y valores completos |
+| R10.2 | Guardar carrito `[gorra M × 1]` | Propaga `CheckoutError` con `PRODUCTO_INEXISTENTE`; la base conserva 0 pedidos y 0 ítems |
+| R10.3 | Guardar `[remera M × 1, precio: 1]` | precio unitario `Decimal("11999.50")`; subtotal, descuento, envío y total son Decimal idénticos a `calcular_total` |
+| R10.4 | email `" Ana@Mail.com "`, zona `" caba "`, talle `" m "`, cupón `" bienvenida "` | email `ana@mail.com`; zona `CABA`, talle `M`, cupón `BIENVENIDA` |
+| R10.5 | Guardar pedido con cupón `"  "` | El campo cupón devuelto es `None` |
+| R10.6 | Consultar id `999` cuando no existe | Devuelve `None` |
+| R10.7 | Guardar dos pedidos para `ana@mail.com` y `" ANA@MAIL.COM "`; llamar `pedidos_de(con, " Ana@Mail.com ")` | Devuelve ambos pedidos, primero el segundo que se guardó |
+| R10.8 | Guardar pedido con email `' OR 1=1 --`; llamar `pedidos_de` con ese mismo email | Devuelve solo el pedido de ese email literal; no altera la consulta |
 
 ## R11 — API HTTP
 
@@ -129,13 +135,13 @@ Particiones: POST válido, GET existente, JSON inválido, campos faltantes o con
 
 | Caso | Entrada | Resultado esperado |
 |---|---|---|
-| R11.1 | POST `/api/v1/pedidos`, compra válida | 201; id e importes como strings |
-| R11.2 | GET `/api/v1/pedidos/{id}` existente | 200; pedido completo, importes como strings |
-| R11.3 | POST con cuerpo no JSON | 400, `JSON_INVALIDO` |
-| R11.4 | POST sin email, zona o carrito | 400, `DATOS_INCOMPLETOS` |
-| R11.5 | email, zona o carrito con tipo incorrecto | 400, `DATOS_INCOMPLETOS` |
-| R11.6 | fecha `30/11/2026` | 400, `FECHA_INVALIDA` |
-| R11.7 | POST con producto desconocido | 422, `PRODUCTO_INEXISTENTE` |
-| R11.8 | GET de pedido inexistente | 404, `PEDIDO_INEXISTENTE` |
-| R11.9 | GET o POST en ruta inexistente | 404, `RUTA_INEXISTENTE` |
-| R11.10 | Cualquier respuesta de error | JSON con el formato documentado y status distinto de 500 |
+| R11.1 | POST `/api/v1/pedidos` con `{"email":"ana@mail.com","zona":"CABA","carrito":[{"producto":"remera","talle":"M","cantidad":1}]}` | 201; `id` numérico y `subtotal`, `descuento`, `envio`, `total` strings (`"11999.50"`, `"0.00"`, `"2500.00"`, `"14499.50"`) |
+| R11.2 | GET `/api/v1/pedidos/{id}` usando el id devuelto por R11.1 | 200; pedido completo y todos los importes en texto |
+| R11.3 | POST con cuerpo crudo `esto no es JSON` | 400, `JSON_INVALIDO`, con objeto `error` que contiene `code` y `message` |
+| R11.4 | Tres POST separados, cada uno sin uno de `email`, `zona` o `carrito` | En cada caso 400, `DATOS_INCOMPLETOS` |
+| R11.5 | POST con `email: 7`, `zona: 7` o `carrito: {}` (una variante por request) | En cada caso 400, `DATOS_INCOMPLETOS` |
+| R11.6 | POST válido salvo fecha `30/11/2026` | 400, `FECHA_INVALIDA` |
+| R11.7 | POST con carrito `[{"producto":"gorra","talle":"M","cantidad":1}]` | 422, `PRODUCTO_INEXISTENTE` |
+| R11.8 | GET `/api/v1/pedidos/999` cuando ese id no existe | 404, `PEDIDO_INEXISTENTE` |
+| R11.9 | GET `/api/v1/otra` y POST `/api/v1/otra` | Cada request devuelve 404, `RUTA_INEXISTENTE` |
+| R11.10 | Cada error de R11.3–R11.9 | JSON con `error.code` y `error.message`; ningún caso devuelve 500 |
