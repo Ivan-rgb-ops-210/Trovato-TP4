@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 import pedidos
-from checkout import CheckoutError
+from checkout import CheckoutError, calcular_total
 
 HOY_VIGENTE = date(2026, 10, 1)
 
@@ -86,13 +86,17 @@ def test_pedido_completo_es_visible_desde_otra_conexion(con, ruta):
 
 def test_precio_unitario_guardado_sale_del_catalogo(con):
     carrito = [item(producto="remera", precio=Decimal("1.00"))]
+    esperado = calcular_total(carrito, "CABA", fecha=HOY_VIGENTE)
 
     pedido_id = pedidos.guardar_pedido(
         con, "ana@mail.com", carrito, "CABA", fecha=HOY_VIGENTE
     )
     guardado = pedidos.obtener_pedido(con, pedido_id)
 
-    assert guardado["subtotal"] == Decimal("11999.50")
+    assert guardado["subtotal"] == esperado["subtotal"]
+    assert guardado["descuento"] == esperado["descuento"]
+    assert guardado["envio"] == esperado["envio"]
+    assert guardado["total"] == esperado["total"]
     assert guardado["items"][0]["precio_unitario"] == Decimal("11999.50")
 
 
