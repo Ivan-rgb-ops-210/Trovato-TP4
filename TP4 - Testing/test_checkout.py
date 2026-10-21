@@ -58,3 +58,14 @@ def test_validar_item_no_modifica_el_item():
 
     # Assert
     assert entrada == original
+
+
+def test_talle_ignora_espacios_exteriores():
+    # Arrange
+    entrada = item(talle="  M ")
+
+    # Act
+    resultado = validar_item(entrada)
+
+    # Assert
+    assert resultado is None
