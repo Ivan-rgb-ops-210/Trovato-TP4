@@ -38,3 +38,11 @@ def test_cantidad_diez_es_valida():
 
     # Assert
     assert resultado is None
+
+
+def test_cantidad_decimal_es_invalida():
+    # Arrange
+    entrada = item(cantidad=1.5)
+
+    # Act / Assert
+    assert codigo_de_error(validar_item, entrada) == "CANTIDAD_INVALIDA"
