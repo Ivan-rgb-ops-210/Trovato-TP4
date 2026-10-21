@@ -113,3 +113,13 @@ def test_pedido_guarda_datos_normalizados(con):
     assert guardado["zona"] == "CABA"
     assert guardado["cupon"] == "BIENVENIDA"
     assert guardado["items"][0]["talle"] == "M"
+
+
+def test_pedido_guarda_cupon_vacio_como_none(con):
+    pedido_id = pedidos.guardar_pedido(
+        con, "ana@mail.com", [item()], "CABA", "   ", HOY_VIGENTE
+    )
+
+    guardado = pedidos.obtener_pedido(con, pedido_id)
+
+    assert guardado["cupon"] is None
