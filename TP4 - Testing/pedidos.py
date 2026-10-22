@@ -24,12 +24,6 @@ CREATE TABLE IF NOT EXISTS items (
 );
 """
 
-CENTAVO = Decimal("0.01")
-
-
-def _decimal_de_sql(valor):
-    return Decimal(str(valor)).quantize(CENTAVO)
-
 
 def conectar(ruta):
     con = sqlite3.connect(ruta)
@@ -42,45 +36,39 @@ def crear_esquema(con):
 
 
 def guardar_pedido(con, email, carrito, zona, cupon=None, fecha=None):
-    # Validar y calcular antes de abrir una transacción de escritura: si el
-    # checkout falla, no debe quedar un pedido vacío en la base.
+    cursor = con.execute(
+        "INSERT INTO pedidos (email, zona, cupon) VALUES (?, ?, ?)",
+        (
+            email.strip().lower(),
+            zona.strip().upper(),
+            cupon.strip().upper() if cupon and cupon.strip() else None,
+        ),
+    )
+    pedido_id = cursor.lastrowid
+    con.commit()
+
     resultado = calcular_total(carrito, zona, cupon, fecha)
 
-    try:
-        cursor = con.execute(
-            "INSERT INTO pedidos (email, zona, cupon) VALUES (?, ?, ?)",
-            (
-                email.strip().lower(),
-                zona.strip().upper(),
-                cupon.strip().upper() if cupon and cupon.strip() else None,
-            ),
-        )
-        pedido_id = cursor.lastrowid
+    con.execute(
+        "UPDATE pedidos SET subtotal = ?, descuento = ?, envio = ?, total = ? WHERE id = ?",
+        (
+            float(resultado["subtotal"]),
+            float(resultado["descuento"]),
+            float(resultado["envio"]),
+            float(resultado["total"]),
+            pedido_id,
+        ),
+    )
 
+    for item in carrito:
+        precio = item.get("precio", CATALOGO[item["producto"]])
         con.execute(
-            "UPDATE pedidos SET subtotal = ?, descuento = ?, envio = ?, total = ? WHERE id = ?",
-            (
-                float(resultado["subtotal"]),
-                float(resultado["descuento"]),
-                float(resultado["envio"]),
-                float(resultado["total"]),
-                pedido_id,
-            ),
+            "INSERT INTO items (pedido_id, producto, talle, cantidad, precio_unitario)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (pedido_id, item["producto"], item["talle"].strip().upper(), item["cantidad"], float(precio)),
         )
 
-        for item in carrito:
-            precio = CATALOGO[item["producto"]]
-            con.execute(
-                "INSERT INTO items (pedido_id, producto, talle, cantidad, precio_unitario)"
-                " VALUES (?, ?, ?, ?, ?)",
-                (pedido_id, item["producto"], item["talle"].strip().upper(), item["cantidad"], float(precio)),
-            )
-
-        con.commit()
-        return pedido_id
-    except Exception:
-        con.rollback()
-        raise
+    return pedido_id
 
 
 def obtener_pedido(con, pedido_id):
@@ -97,16 +85,16 @@ def obtener_pedido(con, pedido_id):
         "email": fila["email"],
         "zona": fila["zona"],
         "cupon": fila["cupon"],
-        "subtotal": _decimal_de_sql(fila["subtotal"]),
-        "descuento": _decimal_de_sql(fila["descuento"]),
-        "envio": _decimal_de_sql(fila["envio"]),
-        "total": _decimal_de_sql(fila["total"]),
+        "subtotal": Decimal(fila["subtotal"]),
+        "descuento": Decimal(fila["descuento"]),
+        "envio": Decimal(fila["envio"]),
+        "total": Decimal(fila["total"]),
         "items": [
             {
                 "producto": i["producto"],
                 "talle": i["talle"],
                 "cantidad": i["cantidad"],
-                "precio_unitario": _decimal_de_sql(i["precio_unitario"]),
+                "precio_unitario": Decimal(i["precio_unitario"]),
             }
             for i in items
         ],
@@ -116,6 +104,6 @@ def obtener_pedido(con, pedido_id):
 def pedidos_de(con, email):
     email = email.strip().lower()
     filas = con.execute(
-        "SELECT id FROM pedidos WHERE email = ? ORDER BY id DESC", (email,)
+        f"SELECT id FROM pedidos WHERE email = '{email}' ORDER BY id DESC"
     ).fetchall()
     return [obtener_pedido(con, f["id"]) for f in filas]
